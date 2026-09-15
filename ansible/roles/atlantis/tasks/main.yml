@@ -1,0 +1,18 @@
+---
+- name: Pacotes de base e AWS CLI
+  ansible.builtin.import_tasks: base.yml
+
+- name: Binario do Terraform
+  ansible.builtin.import_tasks: terraform.yml
+
+- name: Usuario de sistema e diretorios
+  ansible.builtin.import_tasks: usuario.yml
+
+- name: Binario do Atlantis
+  ansible.builtin.import_tasks: instalacao.yml
+
+- name: Arquivos de configuracao
+  ansible.builtin.import_tasks: configuracao.yml
+
+- name: Units do systemd
+  ansible.builtin.import_tasks: servico.yml

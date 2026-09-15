@@ -1,0 +1,35 @@
+---
+- name: Baixar o Atlantis
+  ansible.builtin.get_url:
+    url: "https://github.com/runatlantis/atlantis/releases/download/{{ atlantis_version }}/atlantis_linux_amd64.zip"
+    dest: "/tmp/atlantis_{{ atlantis_version }}.zip"
+    checksum: "sha256:https://github.com/runatlantis/atlantis/releases/download/{{ atlantis_version }}/checksums.txt"
+    mode: "0644"
+
+- name: Instalar o binario do Atlantis
+  ansible.builtin.unarchive:
+    src: "/tmp/atlantis_{{ atlantis_version }}.zip"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - atlantis
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Remover o zip do Atlantis
+  ansible.builtin.file:
+    path: "/tmp/atlantis_{{ atlantis_version }}.zip"
+    state: absent
+
+- name: Conferir a versao instalada
+  ansible.builtin.command: "{{ atlantis_bin }} version"
+  register: atlantis_check
+  changed_when: false
+
+- name: Garantir que o binario e o da versao pedida
+  ansible.builtin.assert:
+    that:
+      - atlantis_version | regex_replace('^v', '') in atlantis_check.stdout
+    fail_msg: "Esperava {{ atlantis_version }}, veio: {{ atlantis_check.stdout }}"
+    success_msg: "{{ atlantis_check.stdout | trim }}"

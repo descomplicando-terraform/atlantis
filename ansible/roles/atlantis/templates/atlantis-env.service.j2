@@ -1,0 +1,19 @@
+[Unit]
+Description=Busca a configuracao do Atlantis no SSM Parameter Store
+After=network-online.target
+Wants=network-online.target
+Before=atlantis.service
+
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/atlantis-fetch-env
+
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

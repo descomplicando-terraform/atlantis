@@ -1,0 +1,7 @@
+{
+  "ATLANTIS_GH_USER": "seu-usuario",
+  "ATLANTIS_GH_TOKEN": "ghp_...",
+  "ATLANTIS_GH_WEBHOOK_SECRET": "gere-com: openssl rand -hex 20",
+  "ATLANTIS_REPO_ALLOWLIST": "github.com/sua-org/*",
+  "ATLANTIS_LOG_LEVEL": "info"
+}

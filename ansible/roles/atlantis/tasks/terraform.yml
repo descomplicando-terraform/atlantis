@@ -1,0 +1,32 @@
+---
+- name: Baixar o Terraform
+  ansible.builtin.get_url:
+    url: "https://releases.hashicorp.com/terraform/{{ terraform_version }}/terraform_{{ terraform_version }}_linux_amd64.zip"
+    dest: "/tmp/terraform_{{ terraform_version }}.zip"
+    checksum: "sha256:https://releases.hashicorp.com/terraform/{{ terraform_version }}/terraform_{{ terraform_version }}_SHA256SUMS"
+    mode: "0644"
+
+- name: Instalar o binario do Terraform
+  ansible.builtin.unarchive:
+    src: "/tmp/terraform_{{ terraform_version }}.zip"
+    dest: /usr/local/bin
+    remote_src: true
+    include:
+      - terraform
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Remover o zip do Terraform
+  ansible.builtin.file:
+    path: "/tmp/terraform_{{ terraform_version }}.zip"
+    state: absent
+
+- name: Conferir a versao do Terraform
+  ansible.builtin.command: /usr/local/bin/terraform version
+  register: terraform_check
+  changed_when: false
+
+- name: Exibir a versao do Terraform
+  ansible.builtin.debug:
+    msg: "{{ terraform_check.stdout_lines[0] }}"

@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONF_DIR="{{ atlantis_conf_dir }}"
+CONF_FILE="${CONF_DIR}/atlantis.conf"
+ENV_FILE="${CONF_DIR}/atlantis.env"
+ATLANTIS_GROUP="{{ atlantis_group }}"
+SSM_PARAMETER="{{ atlantis_ssm_parameter }}"
+
+log() { echo "[atlantis-fetch-env] $*" >&2; }
+die() { log "ERRO: $*"; exit 1; }
+
+if [ -r "$CONF_FILE" ]; then
+  . "$CONF_FILE"
+fi
+
+if [ -z "${AWS_REGION:-}" ]; then
+  TOKEN="$(curl -fsS -m 5 -X PUT http://169.254.169.254/latest/api/token \
+    -H 'X-aws-ec2-metadata-token-ttl-seconds: 60')" \
+    || die "sem AWS_REGION em ${CONF_FILE} e sem resposta do IMDS."
+  AWS_REGION="$(curl -fsS -m 5 -H "X-aws-ec2-metadata-token: ${TOKEN}" \
+    http://169.254.169.254/latest/meta-data/placement/region)"
+fi
+export AWS_REGION
+
+log "regiao=${AWS_REGION} parametro=${SSM_PARAMETER}"
+
+DOC="$(mktemp)"
+TMP_ENV="$(mktemp)"
+TMP_JSON="$(mktemp)"
+trap 'rm -f "$DOC" "$TMP_ENV" "$TMP_JSON"' EXIT
+umask 077
+
+aws ssm get-parameter \
+  --name "$SSM_PARAMETER" \
+  --with-decryption \
+  --query 'Parameter.Value' \
+  --output text > "$DOC" \
+  || die "falha ao ler ${SSM_PARAMETER}. Rodou 'make secrets'? O instance profile tem ssm:GetParameter + kms:Decrypt?"
+
+jq -e 'type == "object"' "$DOC" >/dev/null \
+  || die "o valor de ${SSM_PARAMETER} nao e um objeto JSON."
+
+# Cada chave vira uma variavel de ambiente. Valor simples (string, numero,
+# bool) entra como esta. Valor composto (objeto ou lista) vai para um arquivo
+# proprio, e a variavel recebe o caminho -- e assim que o Atlantis espera
+# receber ATLANTIS_REPO_CONFIG, por exemplo.
+while IFS= read -r key; do
+  if jq -e --arg k "$key" '.[$k] | type == "object" or type == "array"' "$DOC" >/dev/null; then
+    json_file="${CONF_DIR}/$(tr 'A-Z' 'a-z' <<< "$key").json"
+    jq --arg k "$key" '.[$k]' "$DOC" > "$TMP_JSON"
+    install -m 0640 -o root -g "$ATLANTIS_GROUP" "$TMP_JSON" "$json_file"
+    value="$json_file"
+    log "  ${key} -> ${json_file}"
+  else
+    value="$(jq -r --arg k "$key" '.[$k]' "$DOC")"
+    log "  ${key}"
+  fi
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  printf '%s="%s"\n' "$key" "$value" >> "$TMP_ENV"
+done < <(jq -r 'keys[]' "$DOC")
+
+install -m 0600 -o root -g root "$TMP_ENV" "$ENV_FILE"
+log "escrito ${ENV_FILE}"

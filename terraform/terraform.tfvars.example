@@ -1,0 +1,11 @@
+# Copie para terraform.tfvars e ajuste.
+
+region        = "us-east-1"
+instance_type = "t3.small"
+ssm_parameter = "/atlantis/prod"
+
+# Para acessar por SSH, informe um key pair que ja exista na conta.
+# key_name = "minha-chave"
+
+# Restrinja o acesso ao seu IP sempre que possivel.
+# cidr_liberado = "203.0.113.10/32"

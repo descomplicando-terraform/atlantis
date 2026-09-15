@@ -1,0 +1,33 @@
+---
+- name: Criar o grupo do Atlantis
+  ansible.builtin.group:
+    name: "{{ atlantis_group }}"
+    system: true
+
+- name: Criar o usuario do Atlantis
+  ansible.builtin.user:
+    name: "{{ atlantis_user }}"
+    group: "{{ atlantis_group }}"
+    home: "{{ atlantis_data_dir }}"
+    shell: /usr/sbin/nologin
+    system: true
+    create_home: false
+
+- name: Criar os diretorios do Atlantis
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ atlantis_conf_dir }}"
+      owner: root
+      group: "{{ atlantis_group }}"
+      mode: "0750"
+    - path: "{{ atlantis_data_dir }}"
+      owner: "{{ atlantis_user }}"
+      group: "{{ atlantis_group }}"
+      mode: "0750"
+  loop_control:
+    label: "{{ item.path }}"

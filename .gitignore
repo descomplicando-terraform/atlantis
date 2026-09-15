@@ -1,0 +1,13 @@
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
+
+# Packer
+packer/manifest.json
+crash.log
+
+# O documento real tem o token do GitHub. So o .example e versionado.
+config/atlantis.json
+config/.documento.json

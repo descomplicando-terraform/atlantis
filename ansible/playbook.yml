@@ -1,0 +1,29 @@
+---
+- name: Construir imagem do Atlantis
+  hosts: all
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Aguardar o apt ficar disponivel
+      ansible.builtin.raw: |
+        while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done
+      changed_when: false
+
+  roles:
+    - role: atlantis
+
+  post_tasks:
+    - name: Verificar que a unit do Atlantis esta habilitada
+      ansible.builtin.command: systemctl is-enabled atlantis.service
+      register: atlantis_enabled
+      changed_when: false
+
+    - name: Mostrar resumo do build
+      ansible.builtin.debug:
+        msg:
+          - "Atlantis        : {{ atlantis_version }} em {{ atlantis_bin }}"
+          - "Terraform       : {{ terraform_version }}"
+          - "Porta           : {{ atlantis_port }}"
+          - "Parametro SSM   : {{ atlantis_ssm_parameter }}"
+          - "atlantis.service: {{ atlantis_enabled.stdout }}"

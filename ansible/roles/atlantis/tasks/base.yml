@@ -1,0 +1,59 @@
+---
+- name: Atualizar cache do apt
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Aplicar atualizacoes de seguranca pendentes
+  ansible.builtin.apt:
+    upgrade: safe
+
+- name: Instalar pacotes base
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - git
+      - jq
+      - unzip
+      - chrony
+    state: present
+
+- name: Baixar o instalador da AWS CLI v2
+  ansible.builtin.get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_architecture }}.zip"
+    dest: /tmp/awscliv2.zip
+    mode: "0644"
+
+- name: Descompactar o instalador
+  ansible.builtin.unarchive:
+    src: /tmp/awscliv2.zip
+    dest: /tmp
+    remote_src: true
+
+- name: Rodar o instalador
+  ansible.builtin.command: /tmp/aws/install --update
+  args:
+    creates: /usr/local/bin/aws
+
+- name: Remover artefatos do instalador
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/awscliv2.zip
+    - /tmp/aws
+
+- name: Conferir a versao da AWS CLI
+  ansible.builtin.command: /usr/local/bin/aws --version
+  register: aws_cli_version
+  changed_when: false
+
+- name: Exibir a versao da AWS CLI
+  ansible.builtin.debug:
+    msg: "{{ aws_cli_version.stderr | default(aws_cli_version.stdout) | trim }}"
+
+- name: Habilitar sincronia de relogio
+  ansible.builtin.systemd_service:
+    name: chrony
+    enabled: true

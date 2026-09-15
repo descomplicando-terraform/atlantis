@@ -1,0 +1,13 @@
+---
+atlantis_version: "v0.47.1"
+atlantis_port: 4141
+atlantis_ssm_parameter: "/atlantis/prod"
+
+terraform_version: "1.16.2"
+
+atlantis_user: atlantis
+atlantis_group: atlantis
+
+atlantis_bin: /usr/local/bin/atlantis
+atlantis_conf_dir: /etc/atlantis
+atlantis_data_dir: /var/lib/atlantis

@@ -1,0 +1,17 @@
+---
+- name: Instalar o nome do parametro do SSM lido no boot
+  ansible.builtin.template:
+    src: atlantis.conf.j2
+    dest: "{{ atlantis_conf_dir }}/atlantis.conf"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Instalar o script que busca a configuracao no SSM
+  ansible.builtin.template:
+    src: atlantis-fetch-env.sh.j2
+    dest: /usr/local/bin/atlantis-fetch-env
+    owner: root
+    group: root
+    mode: "0755"
+    validate: "bash -n %s"
